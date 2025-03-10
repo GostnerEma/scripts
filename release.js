@@ -102,17 +102,19 @@ console.log('changelog generated');
   ask('Pushing main');
   // Push main
   execSync(`git checkout main`, { stdio: 'inherit' });
-  execSync(`git push --set-upstream origin main --tags`, { stdio: 'inherit' });
+  execSync(`git push --set-upstream origin main`, { stdio: 'inherit' });
+  // with tags -> disable by default since pushing a main branch which got a merge with release aus generates a tag on gitlab
+  // execSync(`git push --set-upstream origin main --tags`, { stdio: 'inherit' });
 
   ask('Pushing develop');
   // Push develop
   execSync(`git checkout develop`, { stdio: 'inherit' });
   execSync(`git push --set-upstream origin develop`, { stdio: 'inherit' });
 
-  // ask('Pushing release branch');
-  // // Push release branch
-  // execSync(`git checkout release/${newVersion}`, { stdio: 'inherit' });
-  // execSync(`git push --set-upstream origin release/${newVersion}`, { stdio: 'inherit' });
+  // Push release branch
+  ask('Pushing release branch');
+  execSync(`git checkout release/${newVersion}`, { stdio: 'inherit' });
+  execSync(`git push --set-upstream origin release/${newVersion}`, { stdio: 'inherit' });
 
   // Optionally delete the release branch locally if you like:
   // execSync(`git branch -d release/${newVersion}`, { stdio: 'inherit' });
