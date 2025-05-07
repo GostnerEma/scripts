@@ -78,10 +78,39 @@ try {
   execSync(`git checkout -b release/${newVersion}`, { stdio: 'inherit' });
 
   ask('Running changelogen');
-  // Run changelogen with the correct flag
-  const changelogenFlag = `--${increment}`;
-  execSync(`npx changelogen --output ${changelogenFlag}`, { stdio: 'inherit' });
-console.log('changelog generated');
+  // Find previous release branch
+  let previousReleaseBranch = null;
+ const releaseBranches = execSync('git branch --list --sort=-committerdate "release/*"')
+  .toString()
+  .split('\n')
+  .map(b => b.replace(/^\*\s*/, '').trim()) // Remove leading '* '
+  .filter(b => b && b !== `release/${newVersion}`);
+  if (releaseBranches.length > 0) {
+    previousReleaseBranch = releaseBranches[0];
+    console.log(`Previous release branch detected: ${previousReleaseBranch}`);
+  } else {
+    console.log('No previous release branch detected. This is the first release.');
+  }
+
+  // Generate changelog diff
+  let changelogContent = '';
+  if (previousReleaseBranch) {
+    changelogContent = execSync(`npx changelogen --from ${previousReleaseBranch} --to release/${newVersion} --no-output`, { encoding: 'utf8' });
+  } else {
+    changelogContent = execSync(`npx changelogen --to release/${newVersion} --no-output`, { encoding: 'utf8' });
+  }
+
+  // Write or append to CHANGELOG.md
+  const changelogPath = path.join(process.cwd(), 'CHANGELOG.md');
+  if (fs.existsSync(changelogPath)) {
+    // Append new changelog at the top, keep the rest
+    const oldChangelog = fs.readFileSync(changelogPath, 'utf8');
+    fs.writeFileSync(changelogPath, `${changelogContent.trim()}\n\n${oldChangelog}`);
+    console.log('CHANGELOG.md updated');
+  } else {
+    fs.writeFileSync(changelogPath, changelogContent.trim() + '\n');
+    console.log('CHANGELOG.md created');
+  }
 
   ask('Committing changes');
   // Commit the changes
